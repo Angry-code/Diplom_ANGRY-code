@@ -3,7 +3,8 @@ from django.shortcuts import render, get_object_or_404
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from aggregator.models import Session, Seat, Ticket
+from django.contrib.auth.decorators import login_required
+from aggregator.models import Session, Seat, Ticket, Film
 import qrcode
 from django.conf import settings
 import os
@@ -22,7 +23,7 @@ def session_detail(request, pk):
         .values_list('seat_id', flat=True)
     )
 
-    return render(request, 'cinema/session_detail.html', {
+    return render(request, 'aggregator/session_detail.html', {
         'session': session,
         'seats': seats,
         'booked_seat_ids': booked_seat_ids,
@@ -33,13 +34,48 @@ def session_list(request):
     sessions = Session.objects.select_related('film', 'venue').order_by('starts_at')
     return render(request, 'aggregator/session_list.html', {'sessions': sessions})
 
+def film_list(request):
+    films = Film.objects.all().order_by('title')
+    return render(request, 'aggregator/film_list.html', {'films': films})
+
+
+def film_detail(request, pk):
+    film = get_object_or_404(Film, pk=pk)
+    sessions = (
+        Session.objects
+        .filter(film=film)
+        .select_related('venue')
+        .order_by('starts_at')
+    )
+    return render(request, 'aggregator/film_detail.html', {
+        'film': film,
+        'sessions': sessions,
+    })
+
+def ticket_detail(request, booking_code):
+    ticket = get_object_or_404(
+        Ticket.objects.select_related('session__film', 'session__venue', 'seat'),
+        booking_code=booking_code,
+    )
+    return render(request, 'aggregator/view_ticket.html', {'ticket': ticket})
+
+@login_required
+def my_tickets(request):
+    tickets = (
+        Ticket.objects
+        .filter(user=request.user)
+        .select_related('session__film', 'session__venue', 'seat')
+        .order_by('-created_at')
+    )
+    return render(request, 'aggregator/my_tickets.html', {'tickets': tickets})
+
 @transaction.atomic
 def book_ticket(request, session_id, seat_id):
     if request.method != 'POST':
         return HttpResponseRedirect(reverse('session_detail', args=[session_id]))
     try:
         session = Session.objects.select_for_update().get(pk=session_id)
-        seat = Seat.objects.select_for_update().get(pk=seat_id)
+        seat = Seat.objects.select_for_update().get(pk=seat_id, venue=session.venue)
     except (Session.DoesNotExist, Seat.DoesNotExist):
         # Обработка случая, если сеанс или место не найдены
         return HttpResponseRedirect(reverse('session_list')) 
@@ -48,20 +84,21 @@ def book_ticket(request, session_id, seat_id):
         return HttpResponseRedirect(reverse('session_detail', args=[session.id]))
 
     import uuid
-    booking_code = uuid.uuid4().hex[:12] # Генерируем 12-символьный уникальный код
-
+    
     try:
         ticket = Ticket.objects.create(
             session=session,
             seat=seat,
-            booking_code=f"T{session.id}{seat.id}",
+            user=request.user if request.user.is_authenticated else None,
+            booking_code=uuid.uuid4().hex,
             price_paid=session.price_vip if seat.type == 'vip' else session.price_regular,
             status='active',
         )
 
         ticket.generate_qr_code()
 
-        return HttpResponseRedirect(reverse('session_detail', args=[session.id]))
+        return HttpResponseRedirect(reverse('ticket_detail', args=[ticket.booking_code]))
+
     except Exception as e:
         print(f"Ошибка при бронировании билета: {e}") 
-        return HttpResponseRedirect(reverse('session_detail', args=[session.id])) # Или другая страница с сообщением об ошибке
+        return HttpResponseRedirect(reverse('session_detail', args=[session.id]))

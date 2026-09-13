@@ -9,11 +9,13 @@ import os
 
 # Create your models here.
 class User(AbstractUser):
+    ROLE_CHOICES = [('admin', 'Администратор'), ('guest', 'Гость')]
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='guest')
     full_name = models.CharField(max_length=255, blank=True, null=True)
-    is_admin = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.email
+    email = models.EmailField(unique=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
 class Venue(models.Model):
     name = models.CharField(max_length=255)
@@ -62,10 +64,10 @@ class Session(models.Model):
 
     class Meta:
         constraints = [
-            #CheckConstraint(
-                #check=Q(ends_at__gt=F('starts_at')),
-                #name='valid_time_range',
-            #),
+            models.CheckConstraint(
+            condition=Q(ends_at__gt=F('starts_at')),
+            name='valid_time_range',
+            ),
             models.UniqueConstraint(
                 fields=['venue', 'starts_at'],
                 name='unique_venue_time',
@@ -91,6 +93,12 @@ class Ticket(models.Model):
     price_paid = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=30, choices=STATUSES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def qr_url(self):
+        if self.qr_image_path:
+            return f"{settings.MEDIA_URL}{self.qr_image_path}"
+        return None
 
     def __str__(self):
         return f"Билет {self.booking_code} — {self.session}"
@@ -127,3 +135,8 @@ class Ticket(models.Model):
         
         self.qr_image_path = os.path.join('qr_codes', filename) # Сохраняем относительный путь
         self.save() # Сохраняем модель с путем к QR-коду
+
+    def is_valid_now(self):
+        return self.status == 'active' and self.session.starts_at >= timezone.now()
+
+    

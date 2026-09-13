@@ -6,18 +6,20 @@
       <th>Зал</th>
       <th>Начало</th>
       <th>Цена (рег/VIP)</th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
     {% for session in sessions %}
       <tr>
-        <td>{{ session.film.title }}</td>
+        <td><a href="{% url 'film_detail' session.film.pk %}">{{ session.film.title }}</a></td>
         <td>{{ session.venue.name }}</td>
         <td>{{ session.starts_at|date:"d.m.Y H:i" }}</td>
         <td>{{ session.price_regular }} ₽ / {{ session.price_vip }} ₽</td>
+        <td><a href="{% url 'session_detail' session.pk %}">Выбрать места</a></td>
       </tr>
     {% empty %}
-      <tr><td colspan="4">Нет сеансов</td></tr>
+      <tr><td colspan="5">Нет сеансов</td></tr>
     {% endfor %}
   </tbody>
 </table>

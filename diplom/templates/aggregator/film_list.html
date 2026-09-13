@@ -1,0 +1,11 @@
+<h1>Фильмы</h1>
+<ul>
+  {% for film in films %}
+    <li>
+      <a href="{% url 'film_detail' film.pk %}">{{ film.title }}</a>
+      ({{ film.duration_minutes }} мин)
+    </li>
+  {% empty %}
+    <li>Пока нет фильмов</li>
+  {% endfor %}
+</ul>

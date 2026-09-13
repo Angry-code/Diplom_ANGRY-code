@@ -31,12 +31,12 @@
         <p><strong>Сеанс:</strong> {{ ticket.session.starts_at|date:"d E Y H:i" }}</p>
         <p><strong>Кинотеатр:</strong> {{ ticket.session.venue.name }}</p>
         <p><strong>Место:</strong> Ряд {{ ticket.seat.row_number }}, Место {{ ticket.seat.seat_number }} ({{
-            ticket.seat.type }})</p>
-        <p><strong>Цена:</strong> {{ ticket.price_paid }}</p>
+            ticket.seat.get_type_display }})</p>
+        <p><strong>Цена:</strong> {{ ticket.price_paid }} ₽</p>
 
         <div class="ticket-qr">
-            {% if ticket.qr_image_path %}
-            <img src="{{ ticket.qr_image_path }}" alt="QR Code для билета {{ ticket.booking_code }}" width="200">
+            {% if ticket.qr_url %}
+            <img src="{{ ticket.qr_url }}" alt="QR Code для билета {{ ticket.booking_code }}" width="200">
             <p><small>Пожалуйста, покажите этот QR-код на входе.</small></p>
             {% else %}
             <p>QR-код для этого билета пока не готов.</p>

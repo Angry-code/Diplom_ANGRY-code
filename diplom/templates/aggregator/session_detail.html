@@ -1,19 +1,56 @@
-<h1>{{ session.film.title }} — {{ session.venue.name }} ({{ session.starts_at|date:"d.m.Y H:i" }})</h1>
+{% extends 'aggregator/base.html' %}
+{% load static %}   {# ← ВАЖНО: подключаем тег static #}
 
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px;">
+{% block title %}{{ session.film.title }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'aggregator/css/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>{{ session.film.title }}</h1>
+
+<p>
+  <strong>Зал:</strong> {{ session.venue.name }} |
+  <strong>Начало:</strong> {{ session.starts_at|date:"d.m.Y H:i" }} |
+  <strong>Цена:</strong> обычное — {{ session.price_regular }} ₽,
+  VIP — {{ session.price_vip }} ₽
+</p>
+
+<div class="legend">
+  <span class="legend-item">
+    <span class="legend-color legend-regular"></span> обычное
+  </span>
+  <span class="legend-item">
+    <span class="legend-color legend-vip"></span> VIP
+  </span>
+  <span class="legend-item">
+    <span class="legend-color legend-booked"></span> занято
+  </span>
+</div>
+
+<div class="hall" style="--cols: {{ session.venue.seats_per_row }};">
   {% for seat in seats %}
     {% if seat.id in booked_seat_ids %}
-      <div style="background: #ccc; padding: 6px; text-align: center; border-radius: 4px;">
-        {{ seat.row_number }}-{{ seat.seat_number }}<br>
-        <small style="color: #666;">занято</small>
+      <div class="seat seat--booked"
+           title="Ряд {{ seat.row_number }}, место {{ seat.seat_number }} — занято">
+        {{ seat.seat_number }}
       </div>
     {% else %}
-      <form method="post" action="{% url 'book_ticket' session.id seat.id %}">
+      <form method="post"
+            action="{% url 'book_ticket' session.id seat.id %}"
+            onsubmit="return confirm('Забронировать место {{ seat.seat_number }} в ряду {{ seat.row_number }}?');"
+            style="margin:0;">
         {% csrf_token %}
-        <button type="submit" style="width: 100%; padding: 6px; background: #4CAF50; color: white; border: none; border-radius: 4px;">
-          {{ seat.row_number }}-{{ seat.seat_number }}
+        <button type="submit"
+                class="seat seat--{% if seat.type == 'vip' %}vip{% else %}regular{% endif %}"
+                title="Ряд {{ seat.row_number }}, место {{ seat.seat_number }} — {{ seat.get_type_display }}">
+          {{ seat.seat_number }}
         </button>
       </form>
     {% endif %}
   {% endfor %}
 </div>
+
+<a href="{% url 'session_list' %}" class="back-link">← К расписанию</a>
+{% endblock %}

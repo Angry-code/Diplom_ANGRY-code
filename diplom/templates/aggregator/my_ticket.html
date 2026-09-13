@@ -1,0 +1,11 @@
+<h1>Мои билеты</h1>
+{% for ticket in tickets %}
+  <div>
+    <a href="{% url 'ticket_detail' ticket.booking_code %}">
+      {{ ticket.session.film.title }} — {{ ticket.session.starts_at|date:"d.m.Y H:i" }}
+    </a>
+    ({{ ticket.get_status_display }})
+  </div>
+{% empty %}
+  <p>У вас нет билетов.</p>
+{% endfor %}
