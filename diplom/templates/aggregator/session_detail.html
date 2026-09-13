@@ -1,0 +1,19 @@
+<h1>{{ session.film.title }} — {{ session.venue.name }} ({{ session.starts_at|date:"d.m.Y H:i" }})</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px;">
+  {% for seat in seats %}
+    {% if seat.id in booked_seat_ids %}
+      <div style="background: #ccc; padding: 6px; text-align: center; border-radius: 4px;">
+        {{ seat.row_number }}-{{ seat.seat_number }}<br>
+        <small style="color: #666;">занято</small>
+      </div>
+    {% else %}
+      <form method="post" action="{% url 'book_ticket' session.id seat.id %}">
+        {% csrf_token %}
+        <button type="submit" style="width: 100%; padding: 6px; background: #4CAF50; color: white; border: none; border-radius: 4px;">
+          {{ seat.row_number }}-{{ seat.seat_number }}
+        </button>
+      </form>
+    {% endif %}
+  {% endfor %}
+</div>

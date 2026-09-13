@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Ваш билет: {{ ticket.booking_code }}</title>
+    {% load static %}
+    <style>
+        .ticket-container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px;
+            text-align: center;
+            display: inline-block;
+            /* Или block, в зависимости от желаемого макета */
+            font-family: Arial, sans-serif;
+        }
+
+        .ticket-qr img {
+            margin-top: 15px;
+            border: 1px solid black;
+            /* Чтобы видеть границы QR-кода */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ticket-container">
+        <h2>Ваш билет</h2>
+        <p><strong>Код бронирования:</strong> {{ ticket.booking_code }}</p>
+        <p><strong>Фильм:</strong> {{ ticket.session.film.title }}</p>
+        <p><strong>Сеанс:</strong> {{ ticket.session.starts_at|date:"d E Y H:i" }}</p>
+        <p><strong>Кинотеатр:</strong> {{ ticket.session.venue.name }}</p>
+        <p><strong>Место:</strong> Ряд {{ ticket.seat.row_number }}, Место {{ ticket.seat.seat_number }} ({{
+            ticket.seat.type }})</p>
+        <p><strong>Цена:</strong> {{ ticket.price_paid }}</p>
+
+        <div class="ticket-qr">
+            {% if ticket.qr_image_path %}
+            <img src="{{ ticket.qr_image_path }}" alt="QR Code для билета {{ ticket.booking_code }}" width="200">
+            <p><small>Пожалуйста, покажите этот QR-код на входе.</small></p>
+            {% else %}
+            <p>QR-код для этого билета пока не готов.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
