@@ -30,6 +30,7 @@ class Seat(models.Model):
     TYPES = [
         ('regular', 'Обычное'),
         ('vip', 'VIP'),
+        ('disabled', 'Отключено'),
     ]
 
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='seats')
